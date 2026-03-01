@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
+import axios from "axios";
 
 
 
@@ -17,6 +18,8 @@ function RecenterMap({position} : {position: [number, number]}) {
 
 }
 
+
+
 export default function Home() {
   const [selectedState, setSelectedState] = useState("Johor");
   var position: [number, number] = [1.4927, 103.7414]; // Default to Johor coordinates
@@ -24,6 +27,7 @@ export default function Home() {
   const riskScore = 72;
   const riskLevel =
     riskScore > 60 ? "High Risk" : riskScore > 30 ? "Moderate Risk" : "Stable";
+  const [ text , setText ] = useState("");
 
   const riskColor =
     riskScore > 60
@@ -31,6 +35,19 @@ export default function Home() {
       : riskScore > 30
       ? "bg-yellow-500"
       : "bg-green-500";
+
+
+  useEffect(() => {
+  // Fetch risk score from backend API
+  axios.get("http://localhost:8000/greetings")
+    .then(response => {
+      console.log("Greetings:", response.data.message);
+      setText(response.data.message);
+    })
+    .catch(error => {
+      console.error("Error fetching greetings:", error);
+    });
+});
 
 
    const chooseState = (state: string) => {
@@ -59,6 +76,9 @@ export default function Home() {
           </h1>
           <p className="text-zinc-600 mt-2">
             AI-powered monitoring for agricultural risk and food stability.
+          </p>
+          <p className="text-zinc-600 mt-2">
+            {text}
           </p>
         </div>
 
