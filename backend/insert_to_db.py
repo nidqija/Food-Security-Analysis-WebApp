@@ -58,6 +58,7 @@ def insert_data(conn, data):
         cursor.execute("""
             INSERT INTO food_supply (state, month, rainfall, temperature, yield, disease_index, price_change, risk_score)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (state, month) DO NOTHING
         """, (
             row['State'], 
             row['Month'], 
