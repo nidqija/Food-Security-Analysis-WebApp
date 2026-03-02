@@ -3,8 +3,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine , text
 import pandas as pd
+import urllib
 
 load_dotenv()
 
@@ -15,7 +16,8 @@ load_dotenv()
 
 # ========================================================================================================================================
 app = FastAPI()
-engine = create_engine(f"postgresql://{os.getenv('user_name')}:{os.getenv('password')}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
+safe_password = urllib.parse.quote_plus(os.getenv('password'))
+engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
 
 
 # Allow CORS for all origins (for development purposes)
@@ -47,9 +49,12 @@ async def say_hello():
 
 @app.get('/state/{state_name}')
 def get_state_data(state_name: str):
-    query = f"SELECT * FROM food_supply WHERE state = '{state_name}'"
-    result = engine.execute(query)
-    data = [dict(row) for row in result]
+    query = text("SELECT * FROM food_supply WHERE state = :state_name")
+    
+    with engine.connect() as connection:
+        result = connection.execute(query, {"state_name": state_name})
+        data = result.mappings().all()  # Fetch all rows as mappings (dictionaries)
+
     return {"data": data}
 
 

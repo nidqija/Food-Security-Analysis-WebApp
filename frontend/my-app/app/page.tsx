@@ -25,9 +25,9 @@ export default function Home() {
   var position: [number, number] = [1.4927, 103.7414]; // Default to Johor coordinates
   const [positionState, setPositionState] = useState(position);
   const riskScore = 72;
-  const riskLevel =
-    riskScore > 60 ? "High Risk" : riskScore > 30 ? "Moderate Risk" : "Stable";
+  const riskLevel = riskScore > 60 ? "High Risk" : riskScore > 30 ? "Moderate Risk" : "Stable";
   const [ text , setText ] = useState("");
+  const [ stateData , setStateData ] = useState([]);
 
   const riskColor =
     riskScore > 60
@@ -54,6 +54,7 @@ export default function Home() {
     setSelectedState(state);
     if (state === "Johor") {
       setPositionState([1.4927, 103.7414]);
+    
     } else if (state === "Kedah") {
       setPositionState([6.1250, 100.3678]);
     } else if (state === "Selangor") {
@@ -63,6 +64,16 @@ export default function Home() {
     } else if (state === "Sarawak") {
       setPositionState([2.2151, 113.9436]);
     }
+
+    axios.get(`http://localhost:8000/state/${state}`)
+      .then(response => {
+        console.log(`Data for ${state}:`, response.data.data);
+        setStateData(response.data.data);
+        setText(`Data for ${state}: ${response.data.data.length} rows`);
+      })
+      .catch(error => {
+        console.error(`Error fetching data for ${state}:`, error);
+      });
   }
 
   return (
@@ -79,6 +90,17 @@ export default function Home() {
           </p>
           <p className="text-zinc-600 mt-2">
             {text}
+          </p>
+          <p>
+            {stateData.length > 0 && (
+              <div className="mt-4 p-4 bg-green-100 rounded-lg">
+                <h3 className="font-semibold mb-2">Latest Data:</h3>
+                <pre className="text-sm text-zinc-700 max-h-40 overflow-auto">
+                  {JSON.stringify(stateData[0], null, 2)}
+                </pre>
+                
+              </div>
+            )}
           </p>
         </div>
 
