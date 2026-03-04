@@ -42,6 +42,7 @@ export default function Home() {
   const [stateData, setStateData] = useState<Record<string, unknown>[]>([]);
   const [yieldScore, setYieldScore] = useState(0);
   const [greeting, setGreeting] = useState("");
+  const [yieldData , setYieldData] = useState<number>(0);
 
   useEffect(() => {
     axios.get("http://localhost:8000/greetings")
@@ -71,6 +72,27 @@ export default function Home() {
   const riskLabel =
     yieldScore > 60 ? "HIGH RISK" : yieldScore > 30 ? "MODERATE" : "STABLE";
 
+
+
+  useEffect(() => {
+  axios.get(`http://localhost:8000/request_state_yield/${selectedState}`)
+    .then((r) => {
+      console.log("New API Response:", r.data);
+      
+      // Access the new keys we defined in FastAPI
+      const janPrediction = r.data.predictions_jan;
+      
+      if (janPrediction !== undefined) {
+        // Rounding to 1 decimal place for a clean UI
+        const cleanScore = Math.round(janPrediction * 10) / 10;
+        setYieldData(cleanScore);
+      }
+    })
+    .catch((e) => {
+      console.error("Error fetching state yield data:", e);
+    });
+}, [selectedState]);
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -87,6 +109,12 @@ export default function Home() {
           <div className="text-right text-xs text-gray-400">
             <p className="font-semibold text-gray-700 text-sm">March 2026</p>
             <p>Live monitoring active</p>
+            {yieldData > 0 && 
+            <>
+            <p className="text-emerald-600 font-medium text-xs mt-1">AI Predictions Updated</p>
+            <p className="text-xs text-gray-500 mt-1">{yieldData}% predicted yield drop</p>
+            </>
+            }
           </div>
         </div>
 
@@ -106,7 +134,7 @@ export default function Home() {
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">Predicted Yield Drop</p>
             <div className="flex items-end gap-3 mt-1">
-              <span className="text-5xl font-black text-red-500">18%</span>
+              <span className="text-5xl font-black text-red-500">{yieldData}%</span>
               <span className="mb-1 px-3 py-1 rounded-full text-xs font-bold bg-red-50 border border-red-200 text-red-700">▼ BELOW AVG</span>
             </div>
             <p className="text-gray-400 text-xs mt-3">Versus previous season average</p>
@@ -144,7 +172,7 @@ export default function Home() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <Marker position={positionState}>
-                  <Popup><strong>{selectedState}</strong><br />Yield Score: {yieldScore || "N/A"}</Popup>
+                  <Popup><strong>{selectedState}</strong><br />Yield Score: {yieldData}%</Popup>
                 </Marker>
                 <RecenterMap position={positionState} />
               </MapContainer>

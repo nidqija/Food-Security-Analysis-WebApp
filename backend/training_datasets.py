@@ -8,6 +8,7 @@ import urllib
 
 
 
+
 load_dotenv()
 
 safe_password = urllib.parse.quote_plus(os.getenv('password'))
@@ -15,51 +16,22 @@ engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{
 
 # this function is used to train model and predict yields for next 2 months based on data of specific state 
 def train_and_predict(state_name: str):
-    # 1. Load data from the database
     query = f"SELECT * FROM food_supply WHERE state = '{state_name}'"
     df = pd.read_sql(query, engine)
-
-   # calculate average stats for each month 
-    average_query = f"""
-    SELECT month, 
-           AVG(rainfall) AS rainfall, 
-           AVG(temperature) AS temperature, 
-           AVG(disease_index) AS disease_index, 
-           AVG(price_change) AS price_change, 
-           AVG(yield) AS yield
-    FROM food_supply
-    WHERE state = '{state_name}'
-    GROUP BY month
-    ORDER BY month
-    """
-
-    stats = pd.read_sql(average_query, engine)
-
-    if stats.empty:
-        raise ValueError(f"No data found for state: {state_name}")
     
+    # Fill missing DB values immediately to avoid NaN issues
+    df = df.fillna(0)
 
-
-    
-
-    # 2. Pre-processing: Convert Month to Numbers
-    # Example: '2025-01' -> 1
     if 'month' in df.columns:
         df['month_num'] = pd.to_datetime(df['month']).dt.month
     
-    # 3. Prepare Features (X) and Target (y)
-    # ensure that the columns fetched from db match these names and types
     X = df[['month_num', 'rainfall', 'temperature', 'disease_index', 'price_change']]
-    # target variable to predict 
     y = df['yield'] 
 
-    # 4. Train the XGboost ml model
     model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
-    # fit the model to the data
-
     model.fit(X, y)
 
-    # prepare future data using average stats for jan and feb first
+    # Calculate monthly averages
     monthly_stats = df.groupby('month_num').agg({
         'rainfall': 'mean',
         'temperature': 'mean',
@@ -67,36 +39,35 @@ def train_and_predict(state_name: str):
         'price_change': 'mean'
     }).reset_index()
 
-# filter stats for Jan and Feb
-    jan_stats = monthly_stats[monthly_stats['month_num'] == 1]
-    feb_stats = monthly_stats[monthly_stats['month_num'] == 2]
+    # Helper function to prevent index errors if a month is missing
+    def get_month_data(m_num):
+        row = monthly_stats[monthly_stats['month_num'] == m_num]
+        if row.empty:
+            # If month missing, use overall averages as a fallback
+            return {
+                'month_num': m_num,
+                'rainfall': monthly_stats['rainfall'].mean() or 0,
+                'temperature': monthly_stats['temperature'].mean() or 0,
+                'disease_index': monthly_stats['disease_index'].mean() or 0,
+                'price_change': monthly_stats['price_change'].mean() or 0
+            }
+        return row.iloc[0].to_dict()
 
-# create future data for Jan and Feb using the average stats 
-# separate dataframes by month to create a single dataframe for future predictions
-    future_data = pd.DataFrame([{
-        'month_num': 1,
-        'rainfall': jan_stats['rainfall'].values[0],
-        'temperature': jan_stats['temperature'].values[0],
-        'disease_index': jan_stats['disease_index'].values[0],
-        'price_change': jan_stats['price_change'].values[0]
-    }, 
-    {
-        'month_num': 2,
-        'rainfall': feb_stats['rainfall'].values[0],
-        'temperature': feb_stats['temperature'].values[0],
-        'disease_index': feb_stats['disease_index'].values[0],
-        'price_change': feb_stats['price_change'].values[0]
-    }
-    
-    ])
+    future_data = pd.DataFrame([get_month_data(1), get_month_data(2)])
 
-  # predict yields for Jan and Feb using the trained model
     predictions = model.predict(future_data)
-    return predictions , model
+    feature_summary = future_data.to_dict(orient='records')
+    
+    return predictions, model, feature_summary 
 
+# Corrected function call (Unpacking 3 values)
+preds, my_trained_model, features = train_and_predict("Johor")
+print(f"Predicted yields for {my_trained_model}: {preds}")
+
+my_trained_model.save_model("xgb_model.json")
 
 # function call to train model
-preds, my_trained_model = train_and_predict("Johor")
+preds, my_trained_model, features = train_and_predict("Johor")
 print(f"Predicted yields for Jan and Feb for Johor: {preds}")
 
 # save the trained model to json file for later use in the API
