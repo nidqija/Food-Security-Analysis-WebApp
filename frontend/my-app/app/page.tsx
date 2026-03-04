@@ -44,6 +44,7 @@ export default function Home() {
   const [greeting, setGreeting] = useState("");
   const [yieldData , setYieldData] = useState<number>(0);
   const [riskData, setRiskData] = useState<number>(0);
+  const [inflationData, setInflationData] = useState<number>(0);
 
   useEffect(() => {
     axios.get("http://localhost:8000/greetings")
@@ -112,6 +113,25 @@ useEffect(() => {
     });
 }, [selectedState]);
 
+useEffect(() => {
+  axios.get(`http://localhost:8000/request_state_inflation/${selectedState}`)
+    .then((r) => {
+      console.log("Inflation API Response:", r.data);
+      // Access the predicted price change for January from the API response
+      const predictedChange = r.data.predicted_price_change_jan;
+      
+      if (predictedChange !== undefined) {
+        // rounding to 1 decimal place for more clearer display
+        const cleanInflation = Math.round(predictedChange * 10) / 10;
+        setInflationData(cleanInflation);
+        console.log(`Predicted Price Change for ${selectedState}: ${cleanInflation}%`);
+      }
+    })
+    .catch((e) => {
+      console.error("Error fetching state inflation data:", e);
+    });
+}, [selectedState]);
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -163,7 +183,7 @@ useEffect(() => {
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">Market Price Inflation</p>
             <div className="flex items-end gap-3 mt-1">
-              <span className="text-5xl font-black text-yellow-500">+12%</span>
+              <span className="text-5xl font-black text-yellow-500">{inflationData}%</span>
               <span className="mb-1 px-3 py-1 rounded-full text-xs font-bold bg-yellow-50 border border-yellow-200 text-yellow-700">▲ RISING</span>
             </div>
             <p className="text-gray-400 text-xs mt-3">Food price increase this month</p>

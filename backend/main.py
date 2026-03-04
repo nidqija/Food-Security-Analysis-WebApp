@@ -11,6 +11,7 @@ import xgboost as xgb
 import json
 from services.calculate_yield_index import train_and_predict
 from services.calculate_risk_score import calculate_risk
+from services.calculate_market_inflation import calc_market_inflation_trend
 import numpy as np
 
 load_dotenv()
@@ -77,6 +78,20 @@ async def get_state_risk(state_name: str):
     except Exception as e:
         print(f"Error calculating risk score: {e}")
         return {"error": "Could not calculate risk score"}
+    
+
+@app.get('/request_state_inflation/{state_name}')
+async def get_state_inflation(state_name: str):
+   try:
+        predictions, trends, features = calc_market_inflation_trend(state_name)
+        clean_predictions = np.nan_to_num(predictions).tolist()
+        clean_trends = np.nan_to_num(trends).tolist()
+    
+        return {"state": state_name , "predicted_price_change_jan": float(clean_predictions[0]), "predicted_price_change_feb": float(clean_predictions[1]), "price_change_trend_jan": float(clean_trends[0]), "price_change_trend_feb": float(clean_trends[1]), "features": features}
+   
+   except Exception as e:
+        print(f"Error calculating market inflation trend: {e}")
+        return {"error": "Could not calculate market inflation trend"}
 
     
 
