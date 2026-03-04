@@ -9,7 +9,8 @@ import pandas as pd
 import urllib
 import xgboost as xgb
 import json
-from training_datasets import train_and_predict
+from services.calculate_yield_index import train_and_predict
+from services.calculate_risk_score import calculate_risk
 import numpy as np
 
 load_dotenv()
@@ -62,6 +63,20 @@ async def get_state_yield(state_name: str):
     except Exception as e:
         print(f"Error reading JSON file: {e}")
         return {"error": "Could not read model data"}
+    
+
+@app.get('/request_state_risk/{state_name}')
+async def get_state_risk(state_name: str):
+
+    try :
+     risk_score = calculate_risk(state_name)
+     clean_risk_score = np.nan_to_num(risk_score).tolist()
+
+     return {"state": state_name , "risk_score": float(clean_risk_score)}
+
+    except Exception as e:
+        print(f"Error calculating risk score: {e}")
+        return {"error": "Could not calculate risk score"}
 
     
 

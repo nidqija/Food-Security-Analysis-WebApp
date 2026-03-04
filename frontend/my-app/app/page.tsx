@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
@@ -43,6 +43,7 @@ export default function Home() {
   const [yieldScore, setYieldScore] = useState(0);
   const [greeting, setGreeting] = useState("");
   const [yieldData , setYieldData] = useState<number>(0);
+  const [riskData, setRiskData] = useState<number>(0);
 
   useEffect(() => {
     axios.get("http://localhost:8000/greetings")
@@ -93,6 +94,24 @@ export default function Home() {
     });
 }, [selectedState]);
 
+
+useEffect(() => {
+   axios.get(`http://localhost:8000/request_state_risk/${selectedState}`)
+    .then((r) => {
+      console.log("Risk API Response:", r.data);
+      
+      const riskScore = r.data.risk_score;
+      
+      if (riskScore !== undefined) {
+        const cleanRisk = Math.round(riskScore * 10) / 10;
+        setRiskData(cleanRisk);
+      }
+    })
+    .catch((e) => {
+      console.error("Error fetching state risk data:", e);
+    });
+}, [selectedState]);
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -124,7 +143,7 @@ export default function Home() {
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">Total Risk Score</p>
             <div className="flex items-end gap-3 mt-1">
-              <span className={`text-5xl font-black ${riskColor}`}>{yieldScore || "—"}</span>
+              <span className={`text-5xl font-black ${riskColor}`}>{riskData || "—"}</span>
               <span className={`mb-1 px-3 py-1 rounded-full text-xs font-bold border ${riskBg}`}>{riskLabel}</span>
             </div>
             <p className="text-gray-400 text-xs mt-3">{selectedState} — current composite score</p>
