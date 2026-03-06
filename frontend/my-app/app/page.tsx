@@ -49,6 +49,8 @@ export default function Home() {
   const [aiInsights, setAiInsights] = useState<string>("");
   const expert = AiRiskAnalysis;
 
+  //====================================================================================================================== //
+
   useEffect(() => {
     axios.get("http://localhost:8000/greetings")
       .then((r) => setGreeting(r.data.message))
@@ -77,6 +79,7 @@ export default function Home() {
   const riskLabel =
     yieldScore > 60 ? "HIGH RISK" : yieldScore > 30 ? "MODERATE" : "STABLE";
 
+//====================================================================================================================== //
 
 
   useEffect(() => {
@@ -98,6 +101,8 @@ export default function Home() {
     });
 }, [selectedState]);
 
+//====================================================================================================================== //
+
 
 useEffect(() => {
    axios.get(`http://localhost:8000/request_state_risk/${selectedState}`)
@@ -115,6 +120,8 @@ useEffect(() => {
       console.error("Error fetching state risk data:", e);
     });
 }, [selectedState]);
+
+//====================================================================================================================== //
 
 useEffect(() => {
   axios.get(`http://localhost:8000/request_state_inflation/${selectedState}`)
@@ -134,6 +141,8 @@ useEffect(() => {
       console.error("Error fetching state inflation data:", e);
     });
 }, [selectedState]);
+
+//====================================================================================================================== //
 
 
 useEffect(() => {
@@ -187,6 +196,21 @@ useEffect(() => {
 
    riskAnalysisInsights();
 },[selectedState, yieldData, riskData, inflationData]);
+
+const getSection = (title: string) => {
+  if (!aiInsights) return null;
+
+  const regex = new RegExp(`\\*\\*${title}:?\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|$)`, "i");
+  const match = aiInsights.match(regex);
+
+  if (match && match[1]) {
+    return match[1]
+      .trim()
+      .replace(/\*/g, "")      
+      .replace(/^-\s*/gm, "• "); 
+  }
+  return null;
+};
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
@@ -313,17 +337,6 @@ useEffect(() => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-4">Latest Data — {selectedState}</h2>
-            <div className="space-y-2 text-sm text-gray-600">
-           {!aiInsights ? (
-              <p className="text-gray-400 italic">Loading AI insights...</p>
-            ) : (
-              <p>{aiInsights}</p>
-            )}
-           </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <h2 className="font-semibold text-gray-800 mb-4">🤖 AI Risk Analysis</h2>
             <div className="space-y-3 text-sm text-gray-600">
               {[
                 "Reduced rainfall combined with increased temperature is contributing to crop stress in northern states.",
@@ -338,6 +351,36 @@ useEffect(() => {
               ))}
             </div>
           </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+            <h2 className="font-semibold text-gray-800 mb-4">🤖 AI Risk Analysis</h2>
+  
+  {/* Card 1: Assessment */}
+  <div className="bg-white border-t-4 border-blue-500 p-5 rounded-xl shadow-sm mb-5">
+    <h3 className="font-bold text-gray-800 mb-2">📋 Overall Assessment</h3>
+    <div className="text-sm text-gray-600 whitespace-pre-line">
+      {getSection("Overall Assessment") || "Parsing..."}
+    </div>
+  </div>
+
+  {/* Card 2: Key Risks */}
+  <div className="bg-white border-t-4 border-red-500 p-5 rounded-xl shadow-sm mb-5">
+    <h3 className="font-bold text-gray-800 mb-2">⚠️ Key Risks</h3>
+    <div className="text-sm text-gray-600 whitespace-pre-line">
+      {getSection("Key Risks") || "Parsing..."}
+    </div>
+  </div>
+
+  {/* Card 3: Mitigation */}
+  <div className="bg-white border-t-4 border-emerald-500 p-5 rounded-xl shadow-sm mb-5">
+    <h3 className="font-bold text-gray-800 mb-2">✅ Mitigation Plan</h3>
+    <div className="text-sm text-gray-600 whitespace-pre-line">
+      {getSection("Recommended Mitigation Strategies") || "Parsing..."}
+    </div>
+  </div>
+
+          </div>
+
+          
         </div>
 
       </div>
