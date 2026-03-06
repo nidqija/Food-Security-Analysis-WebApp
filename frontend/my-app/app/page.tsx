@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
+import AiRiskAnalysis from "./factory/Fixer";
 import axios from "axios";
 import Link from "next/link";
 
@@ -45,6 +46,8 @@ export default function Home() {
   const [yieldData , setYieldData] = useState<number>(0);
   const [riskData, setRiskData] = useState<number>(0);
   const [inflationData, setInflationData] = useState<number>(0);
+  const [aiInsights, setAiInsights] = useState<string>("");
+  const expert = AiRiskAnalysis;
 
   useEffect(() => {
     axios.get("http://localhost:8000/greetings")
@@ -131,6 +134,59 @@ useEffect(() => {
       console.error("Error fetching state inflation data:", e);
     });
 }, [selectedState]);
+
+
+useEffect(() => {
+   const riskAnalysisInsights = async() =>{
+
+     if (yieldData === 0 || riskData === 0 || inflationData === 0) {
+      return;
+     }
+     try {
+       const response = await fetch(`http://localhost:11434/api/chat` , {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+          },
+         body: JSON.stringify({
+
+          model :"gemma3:1b" ,
+          messages :[
+            {
+              role: expert.role,
+              content: expert.content,
+            
+            },
+            {
+              role: "user",
+              content: `Given the current data for ${selectedState} — predicted yield drop of ${yieldData}%, risk score of ${riskData}, and market price inflation of ${inflationData}% — 
+              provide a concise analysis of the food security outlook for the next quarter. Highlight key risks, potential impacts on supply chains, and recommended mitigation strategies.`
+
+            }
+          ],
+          stream : false,
+         })
+
+       });
+
+       if(response.ok){
+         const data = await response.json();
+         console.log("AI Risk Analysis Insights:", data);
+         const content = data.message.content;
+
+         setAiInsights(content);
+
+         
+       } else {
+         console.error("Error from AI API:", response.statusText);
+        }
+     } catch (error) {
+       console.error("Error during AI risk analysis fetch:", error);
+     }
+   }
+
+   riskAnalysisInsights();
+},[selectedState, yieldData, riskData, inflationData]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
@@ -257,15 +313,13 @@ useEffect(() => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-4">Latest Data — {selectedState}</h2>
-            {stateData.length > 0 ? (
-              <pre className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl p-4 overflow-auto max-h-48">
-                {JSON.stringify(stateData[0], null, 2)}
-              </pre>
+            <div className="space-y-2 text-sm text-gray-600">
+           {!aiInsights ? (
+              <p className="text-gray-400 italic">Loading AI insights...</p>
             ) : (
-              <div className="text-gray-400 text-sm bg-gray-50 rounded-xl p-4 border border-gray-100">
-                Select a state above to load data from the API.
-              </div>
+              <p>{aiInsights}</p>
             )}
+           </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
