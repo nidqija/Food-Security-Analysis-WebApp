@@ -193,22 +193,36 @@ useEffect(() => {
        console.error("Error during AI risk analysis fetch:", error);
      }
    }
+   
+   const delayDebounceFn = setTimeout(() => {
+    riskAnalysisInsights();
+  }, 1000);
 
-   riskAnalysisInsights();
+  return () => clearTimeout(delayDebounceFn);
+
 },[selectedState, yieldData, riskData, inflationData]);
 
 const getSection = (title: string) => {
   if (!aiInsights) return null;
 
-  const regex = new RegExp(`\\*\\*${title}:?\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|$)`, "i");
+  const regex = new RegExp(`\\*\\*${title}.*?\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|$)`, "i");
   const match = aiInsights.match(regex);
 
   if (match && match[1]) {
     return match[1]
       .trim()
-      .replace(/\*/g, "")      
-      .replace(/^-\s*/gm, "• "); 
+      .replace(/\*/g, "")     
+      .replace(/^-\s*/gm, "• ") 
+      .split('\n')            
+      .filter(line => !line.toLowerCase().includes('outlook for the next quarter'))
+      .join('\n');
   }
+
+  if (title.toLowerCase().includes("assessment")) {
+    const firstParagraph = aiInsights.split('\n\n')[1] || aiInsights.split('\n')[1];
+    return firstParagraph?.replace(/[*#]/g, "").trim();
+  }
+
   return null;
 };
 
@@ -358,7 +372,7 @@ const getSection = (title: string) => {
   <div className="bg-white border-t-4 border-blue-500 p-5 rounded-xl shadow-sm mb-5">
     <h3 className="font-bold text-gray-800 mb-2">📋 Overall Assessment</h3>
     <div className="text-sm text-gray-600 whitespace-pre-line">
-      {getSection("Overall Assessment") || "Parsing..."}
+      {getSection("Assessment") || "Parsing..."}
     </div>
   </div>
 
