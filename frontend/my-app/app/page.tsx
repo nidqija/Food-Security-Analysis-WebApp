@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
-import AiRiskAnalysis from "./factory/Fixer";
+import {AiRiskAnalysis , AiInsightAnalysis } from "./factory/Fixer";
 import axios from "axios";
 import Link from "next/link";
 
@@ -47,7 +47,9 @@ export default function Home() {
   const [riskData, setRiskData] = useState<number>(0);
   const [inflationData, setInflationData] = useState<number>(0);
   const [aiInsights, setAiInsights] = useState<string>("");
+  const [aiDataInsights, setAiDataInsights] = useState<string>("");
   const expert = AiRiskAnalysis;
+  const AI_INSIGHTS_EXPERT = AiInsightAnalysis;
 
   //====================================================================================================================== //
 
@@ -162,8 +164,8 @@ useEffect(() => {
           model :"gemma3:1b" ,
           messages :[
             {
-              role: expert.role,
-              content: expert.content,
+              role: AiRiskAnalysis.role,
+              content: AiRiskAnalysis.content,
             
             },
             {
@@ -201,6 +203,8 @@ useEffect(() => {
   return () => clearTimeout(delayDebounceFn);
 
 },[selectedState, yieldData, riskData, inflationData]);
+
+
 
 const getSection = (title: string) => {
   if (!aiInsights) return null;
@@ -352,17 +356,21 @@ const getSection = (title: string) => {
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-4">Latest Data — {selectedState}</h2>
             <div className="space-y-3 text-sm text-gray-600">
-              {[
-                "Reduced rainfall combined with increased temperature is contributing to crop stress in northern states.",
-                "Market price surge indicates a possible supply disruption in Q2.",
-                "Recommended: Implement irrigation support and monitor vegetable supply chains.",
-                "Government intervention may be required if composite risk score exceeds 70.",
-              ].map((point, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="text-emerald-600 font-bold text-xs mt-0.5 flex-shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                  <p>{point}</p>
+              <div className="bg-white border-t-4 border-blue-700 p-5 rounded-xl shadow-sm mb-5">
+                 <div className=" whitespace-pre-line">
+                    <h3>Yield data is recorded to be  {yieldData}%</h3>
+                 </div>
+              </div>
+               <div className="bg-white border-t-4 border-blue-700 p-5 rounded-xl shadow-sm mb-5">
+                 <div className=" whitespace-pre-line">
+                     <p>Risk Score is recorded to be {riskData}%</p>
+                 </div>
                 </div>
-              ))}
+                 <div className="bg-white border-t-4 border-blue-700 p-5 rounded-xl shadow-sm mb-5">
+                 <div className=" whitespace-pre-line">
+                      <p>Price Inflation is recorded to be {inflationData}%</p>
+                 </div>
+                </div>
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
