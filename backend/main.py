@@ -23,6 +23,7 @@ safe_password = urllib.parse.quote_plus(os.getenv('password'))
 engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
 model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
 model.load_model("xgb_model.json")
+csv_path = "../datasets/crops_state.csv"
 
 # Allow CORS for all origins (for development purposes)
 app.add_middleware(
@@ -94,8 +95,11 @@ async def get_state_inflation(state_name: str):
         return {"error": "Could not calculate market inflation trend"}
 
     
-
-    
+@app.get('/request_state_analysis/{state_name}')
+async def get_state_analysis(state_name: str):
+   df = pd.read_csv(csv_path)
+   state_data = df[df['state'] == state_name].iloc[0].to_dict()
+   return {"state": state_name , "analysis": state_data}
   
 
 

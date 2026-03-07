@@ -8,6 +8,7 @@ import "leaflet-defaulticon-compatibility";
 import {AiRiskAnalysis , AiInsightAnalysis } from "./factory/Fixer";
 import axios from "axios";
 import Link from "next/link";
+import { get } from "http";
 
 function RecenterMap({ position }: { position: [number, number] }) {
   const map = useMap();
@@ -47,7 +48,7 @@ export default function Home() {
   const [riskData, setRiskData] = useState<number>(0);
   const [inflationData, setInflationData] = useState<number>(0);
   const [aiInsights, setAiInsights] = useState<string>("");
-  const [aiDataInsights, setAiDataInsights] = useState<string>("");
+  const [productionData , setProductionData] = useState<any>(null);
   const expert = AiRiskAnalysis;
   const AI_INSIGHTS_EXPERT = AiInsightAnalysis;
 
@@ -198,13 +199,61 @@ useEffect(() => {
    
    const delayDebounceFn = setTimeout(() => {
     riskAnalysisInsights();
-  }, 1000);
+  }, 1500);
 
   return () => clearTimeout(delayDebounceFn);
 
 },[selectedState, yieldData, riskData, inflationData]);
 
+//====================================================================================================================== //
 
+useEffect(() => {
+
+  axios.get(`http://localhost:8000/request_state_analysis/${selectedState}`)
+    .then(async (r) => {
+      console.log("AI Data Insights API Response:", r.data);
+      try {
+       const response = await fetch(`http://localhost:11434/api/chat` , {
+          method: "POST",
+          headers:{
+            "Content-Type": "application/json",
+          } ,
+          body: JSON.stringify({
+            model :"gemma3:1b" ,
+            messages :[
+              {
+                role: AI_INSIGHTS_EXPERT.role,
+                content: AI_INSIGHTS_EXPERT.content,
+              },
+              {
+                role: "user",
+                content: `Analyze the following state data for ${selectedState}:
+                ${JSON.stringify(r.data.analysis)}`
+              }
+            ],
+            stream : false,
+          })
+       });
+
+       if (response.ok){
+          const data = await response.json();
+          console.log("AI Data Production Insights:", data);
+          setProductionData(data.message.content);
+        
+       }
+
+      } catch (e) {
+        console.error("Error processing AI data insights:", e);
+      }
+    }
+    )
+    .catch((e) => {
+      console.error("Error fetching AI data insights:", e);
+    });
+      
+}, [selectedState]);
+
+//====================================================================================================================== //
 
 const getSection = (title: string) => {
   if (!aiInsights) return null;
@@ -229,6 +278,27 @@ const getSection = (title: string) => {
 
   return null;
 };
+
+const getProductionSection = (title : string) => {
+  if (!productionData) return null;
+  
+  const regex = new RegExp(`\\*\\*${title}.*?\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|$)`, "i");
+  const match = productionData.match(regex);
+
+  if (match && match[1]) {
+    return match[1]
+      .trim()
+      .replace(/\*/g, "")     
+      .replace(/^-\s*/gm, "• ") 
+      .split('\n')            
+      .join('\n');
+  }
+  
+   if (title.toLowerCase().includes("production")) {
+    const firstParagraph = productionData.split('\n\n')[1] || productionData.split('\n')[1];
+    return firstParagraph?.replace(/[*#]/g, "").trim();
+  }
+}
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
@@ -354,25 +424,32 @@ const getSection = (title: string) => {
         {/* Latest State Data + AI Insights */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-            <h2 className="font-semibold text-gray-800 mb-4">Latest Data — {selectedState}</h2>
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="bg-white border-t-4 border-blue-700 p-5 rounded-xl shadow-sm mb-5">
-                 <div className=" whitespace-pre-line">
-                    <h3>Yield data is recorded to be  {yieldData}%</h3>
-                 </div>
-              </div>
-               <div className="bg-white border-t-4 border-blue-700 p-5 rounded-xl shadow-sm mb-5">
-                 <div className=" whitespace-pre-line">
-                     <p>Risk Score is recorded to be {riskData}%</p>
-                 </div>
-                </div>
-                 <div className="bg-white border-t-4 border-blue-700 p-5 rounded-xl shadow-sm mb-5">
-                 <div className=" whitespace-pre-line">
-                      <p>Price Inflation is recorded to be {inflationData}%</p>
-                 </div>
-                </div>
-            </div>
+            <h2 className="font-semibold text-gray-800 mb-4">    👨‍🌾 Farmer's Guide — {selectedState}</h2>
+           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+ 
+  {productionData ? (
+    <div className="space-y-4">
+      <div className="bg-emerald-50 border-l-4 border-emerald-500 p-3 rounded-r-lg">
+        <p className="text-xs font-bold text-emerald-700 uppercase tracking-tight">Status Update</p>
+        <p className="text-sm text-emerald-900">
+          {productionData.split('.')[0]}.
+        </p>
+      </div>
+      
+      <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+        {getProductionSection("Advice") || getProductionSection("Insights")}
+      </div>
+    </div>
+  ) : (
+    <div className="animate-pulse flex space-y-4 flex-col">
+      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+    </div>
+  )}
+</div>
           </div>
+          
           <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
             <h2 className="font-semibold text-gray-800 mb-4">🤖 AI Risk Analysis</h2>
   
