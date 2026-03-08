@@ -52,36 +52,28 @@ def create_table(conn):
     cursor.close()
 
 
-def insert_data(conn, data):
+def create_table_for_predict_temp(conn):
     cursor = conn.cursor()
-    for index, row in data.iterrows():
-        cursor.execute("""
-            INSERT INTO food_supply (state, month, rainfall, temperature, yield, disease_index, price_change, risk_score)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (state, month) DO NOTHING
-        """, (
-            row['State'], 
-            row['Month'], 
-            row['Rainfall'], 
-            row['Temp'], 
-            row['Yield'], 
-            row['Disease_Index'], 
-            row['Price_Change'], 
-            0
-        ))
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mean_temperature (
+            id SERIAL PRIMARY KEY,
+            state VARCHAR(100) NOT NULL,
+            year INT NOT NULL,
+            hist_mean_temp FLOAT NOT NULL,
+            UNIQUE (state, year)
+        )
+    """)
     conn.commit()
+    print("✅ Table 'mean_temperature' is ready.")
 
-    if conn:
-        print("Data inserted successfully")
-    else:
-        print("Data insertion failed" , conn)
-    cursor.close()
+    
+
+
 
 
 get_db_connection()
 create_table(get_db_connection())
-insert_data(get_db_connection(), pd.read_csv(file_path))
-
+create_table_for_predict_temp(get_db_connection())
 
 
 
