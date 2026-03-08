@@ -59,6 +59,7 @@ function RegionalContent() {
     const initialState = searchParams.get("state") ?? "Johor";
     const [selectedState, setSelectedState] = useState(initialState);
     const [tableData, setTableData] = useState<Record<string, unknown>[]>([]);
+    const [tableData2 , setTableData2] = useState<Record<string, unknown>[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -67,13 +68,23 @@ function RegionalContent() {
     const stateInfo = STATES.find((s) => s.name === selectedState);
     const columns = tableData.length > 0 ? Object.keys(tableData[0]).filter((k) => k !== "__typename") : [];
 
+    
+
     useEffect(() => {
-        setLoading(true); setError("");
-        axios.get(`http://localhost:8000/state/${selectedState}`)
-            .then((r) => setTableData(r.data.data ?? []))
-            .catch(() => { setError("Could not connect to backend API."); setTableData([]); })
-            .finally(() => setLoading(false));
-    }, [selectedState]);
+        axios.get(`http://localhost:8000/load_raw_records/${selectedState}`)
+
+        .then((r) => {
+            console.log("Predicted temp for", selectedState, "is", r.data.records) ;
+            setTableData(r.data.records || []);
+        }
+         )
+        
+        .catch(() => {
+            console.log("Could not fetch predicted temp from backend API." , error)
+            setTableData([])
+        } )
+
+    } , [selectedState])
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
@@ -140,14 +151,21 @@ function RegionalContent() {
                         ) : tableData.length === 0 ? (
                             <p className="text-gray-400 text-sm">No data returned from API.</p>
                         ) : (
+                            <>
                             <div className="overflow-auto max-h-72 rounded-xl border border-gray-100">
+                                <p className="p-2">Field Crops</p>
                                 <table className="w-full text-xs">
                                     <thead>
+                                        
                                         <tr className="bg-gray-50 sticky top-0">
+                                            
                                             {columns.map((col) => (
+                                                <>
+                                                
                                                 <th key={col} className="px-3 py-2 text-left text-gray-500 font-semibold capitalize whitespace-nowrap">
                                                     {col.replace(/_/g, " ")}
                                                 </th>
+                                                </>
                                             ))}
                                         </tr>
                                     </thead>
@@ -162,6 +180,35 @@ function RegionalContent() {
                                     </tbody>
                                 </table>
                             </div>
+                             <div className="overflow-auto max-h-72 rounded-xl border border-gray-100">
+                                <p className="p-2">Field Crops</p>
+                                <table className="w-full text-xs">
+                                    <thead>
+                                        
+                                        <tr className="bg-gray-50 sticky top-0">
+                                            
+                                            {columns.map((col) => (
+                                                <>
+                                                
+                                                <th key={col} className="px-3 py-2 text-left text-gray-500 font-semibold capitalize whitespace-nowrap">
+                                                    {col.replace(/_/g, " ")}
+                                                </th>
+                                                </>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {tableData.map((row, i) => (
+                                            <tr key={i} className={`border-t border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-emerald-50 transition-colors`}>
+                                                {columns.map((col) => (
+                                                    <td key={col} className="px-3 py-2 text-gray-600 whitespace-nowrap">{String(row[col] ?? "—")}</td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            </>
                         )}
                     </div>
 

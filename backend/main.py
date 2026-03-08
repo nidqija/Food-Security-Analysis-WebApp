@@ -24,6 +24,8 @@ engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{
 model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
 model.load_model("xgb_model.json")
 csv_path = "../datasets/crops_state.csv"
+pkl_model_path = "../datasets/temp_prediction_model.pkl"
+pkl_feature_path = "../datasets/temp_model_features.pkl"
 
 # Allow CORS for all origins (for development purposes)
 app.add_middleware(
@@ -103,4 +105,11 @@ async def get_state_analysis(state_name: str):
   
 
 
-
+@app.get('/load_raw_records/{state_name}')
+async def load_raw_records(state_name: str):
+    with engine.connect() as connection:
+        result = connection.execute(text(f"SELECT * FROM food_supply WHERE state = '{state_name}'"))
+        result2 = connection.execute(text(f"SELECT * FROM training_data WHERE state = '{state_name}'"))
+        records = [row._asdict() for row in result]
+        records2 = [row._asdict() for row in result2]
+    return {"state": state_name , "records": records , "training_data": records2}
