@@ -23,20 +23,9 @@ const STATE_ADVICE: Record<string, string[]> = {
     Sarawak: ["Deploy aerial surveillance for flood-affected farmland in Sri Aman.", "Accelerate pepper and sago subsidy distribution to affected longhouse communities.", "Increase budget for Sarawak River irrigation rehabilitation project."],
 };
 
-function getComparisonData(state: string) {
-    const stateInfo = STATES.find((s) => s.name === state);
-    if (!stateInfo) return [];
-    const base: Record<string, number[]> = {
-        Johor: [72, 65, 18, 55], Kedah: [58, 71, 22, 78], Selangor: [81, 60, 14, 48], Sabah: [64, 55, 19, 63], Sarawak: [69, 58, 16, 57],
-    };
-    return [state, ...stateInfo.neighbors].map((s) => ({
-        state: s,
-        "Risk Score": base[s]?.[0] ?? 60,
-        "Rainfall Index": base[s]?.[1] ?? 60,
-        "Yield Drop %": base[s]?.[2] ?? 15,
-        "Food Price ↑%": base[s]?.[3] ?? 50,
-    }));
-}
+
+
+
 
 const CustomTooltip = ({
     active, payload, label,
@@ -62,14 +51,41 @@ function RegionalContent() {
     const [tableData2 , setTableData2] = useState<Record<string, unknown>[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [yieldDrop, setYieldDrop] = useState<number | null>(null);
+    const [riskScore , setRiskScore] = useState<number | null>(null);
+    const [stateMetrics , setStateMetrics] = useState<Record<string, {yieldDrop: number | null, riskScore: number | null}>>({});
 
     const advice = STATE_ADVICE[selectedState] ?? [];
-    const comparisonData = getComparisonData(selectedState);
     const stateInfo = STATES.find((s) => s.name === selectedState);
     const columns = tableData.length > 0 ? Object.keys(tableData[0]).filter((k) => k !== "__typename") : [];
     const columns2 = tableData2.length > 0 ? Object.keys(tableData2[0]).filter((k) => k !== "__typename") : [];
 
+    const getComparisonData = () => {
+     const stateInfo = STATES.find((s) => s.name === selectedState);
+     
+     if (!stateInfo) return [];
+
+     const base : Record<string, number[]> = {
+        Johor: [ riskScore ?? 60, 65, yieldDrop ?? 18, 55],
+        Kedah: [58, 71,  22, 78],
+        Selangor: [81, 60, 14, 48],
+        Sabah: [64, 55,  19, 63],
+        Sarawak: [69, 58, 16, 57],
+     };
+
+
+     return [selectedState, ...stateInfo.neighbors].map((s) => ({
+        state: s,
+         // render the risk score and yield drop from the state metric from the promise if its available , otherwise use default value of 60
+        "Risk Score": stateMetrics[s]?.riskScore ?? 60,
+        "Rainfall Index":  60,
+        "Yield Drop %": stateMetrics[s]?.yieldDrop ?? 15,
+        "Food Price ↑%": base[s]?.[3] ?? 50,
+     }));
+  }
     
+      const comparisonData = getComparisonData();
+
 
     useEffect(() => {
         axios.get(`http://localhost:8000/load_raw_records/${selectedState}`)
@@ -88,6 +104,57 @@ function RegionalContent() {
         } )
 
     } , [selectedState])
+
+   
+
+        
+  useEffect(() => {
+    if (!stateInfo) return;
+    // fetch metrics for selected state + neighbors in parallel
+    const statesToFetch = [selectedState, ...stateInfo.neighbors];
+
+    const fetchStateData = async (stateName: string) => {
+        try {
+            // compile all api calls in this state into single promise for efficiency
+           const [yieldRes, riskRes] = await Promise.all([
+                axios.get(`http://localhost:8000/request_state_yield/${stateName}`),
+                axios.get(`http://localhost:8000/request_state_risk/${stateName}`)
+           ]); 
+           
+        // round to 2 decimal places for cleaner display
+           return {
+              stateName,
+                yieldDrop: Math.round((yieldRes.data.predictions_jan || 0) * 100) / 100,
+                riskScore: Math.round((riskRes.data.risk_score || 0) * 100) / 100,
+           }
+             
+        // if error , log the error 
+        // return default values for yield drop and risk score
+        } catch (err) {
+            console.error(`Error fetching data for ${stateName}:`, err);
+            return { stateName , yieldDrop: 15, riskScore: 60};
+        }
+
+  };
+
+   // promise all to fetch data for all states in parallel
+   // promise is used to handle multiple asynchronous api calls concurrently 
+   // it will wait all of them to complete each api calls 
+   // and once its done , it will return the results in an array which we can use to update the state metrics for each state
+   Promise.all(statesToFetch.map(s => fetchStateData(s))).then((results) => {
+        const newMetrics: Record<string, {yieldDrop: number | null, riskScore: number | null}> = {};
+        results.forEach(({ stateName, yieldDrop, riskScore }) => {
+            newMetrics[stateName] = { yieldDrop, riskScore };
+        });
+        setStateMetrics(newMetrics);
+})
+  })
+
+
+
+ 
+
+
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900 p-6">
@@ -128,7 +195,7 @@ function RegionalContent() {
                         </div>
                         <div>
                             <p className="text-gray-400 text-xs uppercase tracking-wider">Data Records</p>
-                            <p className="text-gray-800 font-medium mt-0.5">{loading ? "Loading…" : `${tableData.length} rows`}</p>
+                            <p className="text-gray-800 font-medium mt-0.5">{loading ? "Loading…" : `${tableData.length + tableData2.length} rows`}</p>
                         </div>
                         <div>
                             <p className="text-gray-400 text-xs uppercase tracking-wider">AI Actions</p>
