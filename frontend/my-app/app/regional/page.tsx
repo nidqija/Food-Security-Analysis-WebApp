@@ -67,6 +67,7 @@ function RegionalContent() {
     const comparisonData = getComparisonData(selectedState);
     const stateInfo = STATES.find((s) => s.name === selectedState);
     const columns = tableData.length > 0 ? Object.keys(tableData[0]).filter((k) => k !== "__typename") : [];
+    const columns2 = tableData2.length > 0 ? Object.keys(tableData2[0]).filter((k) => k !== "__typename") : [];
 
     
 
@@ -74,8 +75,10 @@ function RegionalContent() {
         axios.get(`http://localhost:8000/load_raw_records/${selectedState}`)
 
         .then((r) => {
-            console.log("Predicted temp for", selectedState, "is", r.data.records) ;
+            console.log("Field Supply Index Record for", selectedState, "is", r.data.records) ;
+            console.log("Field Crops Record for", selectedState, "is", r.data.training_data) ;
             setTableData(r.data.records || []);
+            setTableData2(r.data.training_data || []);
         }
          )
         
@@ -152,8 +155,8 @@ function RegionalContent() {
                             <p className="text-gray-400 text-sm">No data returned from API.</p>
                         ) : (
                             <>
-                            <div className="overflow-auto max-h-72 rounded-xl border border-gray-100">
-                                <p className="p-2">Field Crops</p>
+                            <div className="overflow-auto max-h-72 rounded-xl border border-gray-100 mb-5">
+                                <p className="p-2">Food Supply Index Records</p>
                                 <table className="w-full text-xs">
                                     <thead>
                                         
@@ -181,13 +184,13 @@ function RegionalContent() {
                                 </table>
                             </div>
                              <div className="overflow-auto max-h-72 rounded-xl border border-gray-100">
-                                <p className="p-2">Field Crops</p>
+                                <p className="p-2">Field Crops Production Records</p>
                                 <table className="w-full text-xs">
                                     <thead>
                                         
                                         <tr className="bg-gray-50 sticky top-0">
                                             
-                                            {columns.map((col) => (
+                                            {columns2.map((col) => (
                                                 <>
                                                 
                                                 <th key={col} className="px-3 py-2 text-left text-gray-500 font-semibold capitalize whitespace-nowrap">
@@ -198,9 +201,9 @@ function RegionalContent() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {tableData.map((row, i) => (
+                                        {tableData2.map((row, i) => (
                                             <tr key={i} className={`border-t border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-emerald-50 transition-colors`}>
-                                                {columns.map((col) => (
+                                                {columns2.map((col) => (
                                                     <td key={col} className="px-3 py-2 text-gray-600 whitespace-nowrap">{String(row[col] ?? "—")}</td>
                                                 ))}
                                             </tr>
