@@ -53,7 +53,8 @@ function RegionalContent() {
     const [error, setError] = useState("");
     const [yieldDrop, setYieldDrop] = useState<number | null>(null);
     const [riskScore , setRiskScore] = useState<number | null>(null);
-    const [stateMetrics , setStateMetrics] = useState<Record<string, {yieldDrop: number | null, riskScore: number | null}>>({});
+    const [foodInflation , setFoodInflation] = useState<number | null>(null);
+    const [stateMetrics , setStateMetrics] = useState<Record<string, any>>({});
 
     const advice = STATE_ADVICE[selectedState] ?? [];
     const stateInfo = STATES.find((s) => s.name === selectedState);
@@ -78,9 +79,9 @@ function RegionalContent() {
         state: s,
          // render the risk score and yield drop from the state metric from the promise if its available , otherwise use default value of 60
         "Risk Score": stateMetrics[s]?.riskScore ?? 60,
-        "Rainfall Index":  60,
+        "Rainfall Index":  10,
         "Yield Drop %": stateMetrics[s]?.yieldDrop ?? 15,
-        "Food Price ↑%": base[s]?.[3] ?? 50,
+        "Food Price ↑%": stateMetrics[s]?.foodInflation ?? 50,
      }));
   }
     
@@ -105,50 +106,59 @@ function RegionalContent() {
 
     } , [selectedState])
 
-   
-
-        
-  useEffect(() => {
+useEffect(() =>{
     if (!stateInfo) return;
-    // fetch metrics for selected state + neighbors in parallel
-    const statesToFetch = [selectedState, ...stateInfo.neighbors];
 
-    const fetchStateData = async (stateName: string) => {
+    const statestoFetch = [selectedState, ...stateInfo.neighbors];
+
+    const fetchAllMetrics = async() =>{
+        setLoading(true);
         try {
-            // compile all api calls in this state into single promise for efficiency
-           const [yieldRes, riskRes] = await Promise.all([
-                axios.get(`http://localhost:8000/request_state_yield/${stateName}`),
-                axios.get(`http://localhost:8000/request_state_risk/${stateName}`)
-           ]); 
-           
-        // round to 2 decimal places for cleaner display
-           return {
-              stateName,
-                yieldDrop: Math.round((yieldRes.data.predictions_jan || 0) * 100) / 100,
-                riskScore: Math.round((riskRes.data.risk_score || 0) * 100) / 100,
-           }
-             
-        // if error , log the error 
-        // return default values for yield drop and risk score
+            const results = await Promise.all(
+                statestoFetch.map( async (stateName) =>{
+                    try {
+                        const [yieldRes , riskRes , foodInflation] = await Promise.all([
+                            axios.get(`http://localhost:8000/request_state_yield/${stateName}`),
+                            axios.get(`http://localhost:8000/request_state_risk/${stateName}`),
+                            axios.get(`http://localhost:8000/request_state_inflation/${stateName}`),
+                        ]);
+
+                        return {
+                            stateName,
+                            yieldDrop: Math.round((yieldRes.data.predictions_jan || 0) * 100) / 100,
+                            riskScore: Math.round((riskRes.data.risk_score || 0) * 100) / 100,
+                            foodInflation: Math.round((foodInflation.data.predicted_price_change_jan || 0) * 100) / 100,
+                        };
+                    } catch (err){
+                        console.log(`Error fetching metrics for ${stateName}:`, err);
+                        return {
+                            stateName,
+                            yieldDrop: 15,
+                            riskScore: 60,
+                            foodInflation: 50,
+                        };
+                    }
+                })
+            )
+
+            const newMetrics: Record<string , any> = {};
+
+            results.forEach((res) =>{
+                newMetrics[res.stateName] = {
+                    yieldDrop: res.yieldDrop,
+                    riskScore: res.riskScore,
+                    foodInflation: res.foodInflation,
+                }
+            });
+
+            setStateMetrics(newMetrics);
+            setLoading(false);
         } catch (err) {
-            console.error(`Error fetching data for ${stateName}:`, err);
-            return { stateName , yieldDrop: 15, riskScore: 60};
-        }
-
-  };
-
-   // promise all to fetch data for all states in parallel
-   // promise is used to handle multiple asynchronous api calls concurrently 
-   // it will wait all of them to complete each api calls 
-   // and once its done , it will return the results in an array which we can use to update the state metrics for each state
-   Promise.all(statesToFetch.map(s => fetchStateData(s))).then((results) => {
-        const newMetrics: Record<string, {yieldDrop: number | null, riskScore: number | null}> = {};
-        results.forEach(({ stateName, yieldDrop, riskScore }) => {
-            newMetrics[stateName] = { yieldDrop, riskScore };
-        });
-        setStateMetrics(newMetrics);
-})
-  })
+            console.log("Error fetching metrics:", err);
+        }   
+    };
+    fetchAllMetrics();
+} ,[selectedState , stateInfo])
 
 
 
@@ -311,7 +321,7 @@ function RegionalContent() {
                         <BarChart data={comparisonData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }} barGap={4}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                             <XAxis dataKey="state" tick={{ fill: "#9ca3af", fontSize: 12 }} axisLine={{ stroke: "#e5e7eb" }} />
-                            <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={{ stroke: "#e5e7eb" }} />
+                            <YAxis domain={[0,20]} tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={{ stroke: "#e5e7eb" }} />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend wrapperStyle={{ color: "#6b7280", fontSize: 12, paddingTop: 12 }} />
                             <Bar dataKey="Risk Score" fill="#f87171" radius={[4, 4, 0, 0]} />
