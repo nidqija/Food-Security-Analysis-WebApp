@@ -54,6 +54,7 @@ function RegionalContent() {
     const [yieldDrop, setYieldDrop] = useState<number | null>(null);
     const [riskScore , setRiskScore] = useState<number | null>(null);
     const [foodInflation , setFoodInflation] = useState<number | null>(null);
+    const [predictedRainfall , setPredictedRainfall] = useState<number | null>(null);
     const [stateMetrics , setStateMetrics] = useState<Record<string, any>>({});
 
     const advice = STATE_ADVICE[selectedState] ?? [];
@@ -79,7 +80,7 @@ function RegionalContent() {
         state: s,
          // render the risk score and yield drop from the state metric from the promise if its available , otherwise use default value of 60
         "Risk Score": stateMetrics[s]?.riskScore ?? 60,
-        "Rainfall Index":  10,
+        "Rainfall Index":  stateMetrics[s]?.predictedRainfall ?? 10,
         "Yield Drop %": stateMetrics[s]?.yieldDrop ?? 15,
         "Food Price ↑%": stateMetrics[s]?.foodInflation ?? 50,
      }));
@@ -117,18 +118,29 @@ useEffect(() =>{
             const results = await Promise.all(
                 statestoFetch.map( async (stateName) =>{
                     try {
-                        const [yieldRes , riskRes , foodInflation] = await Promise.all([
+                        const [yieldRes , riskRes , foodInflation , predictedRainfall] = await Promise.all([
                             axios.get(`http://localhost:8000/request_state_yield/${stateName}`),
                             axios.get(`http://localhost:8000/request_state_risk/${stateName}`),
                             axios.get(`http://localhost:8000/request_state_inflation/${stateName}`),
+                            axios.get(`http://localhost:8000/request_state_predicted_rainfall/${stateName}`),
                         ]);
+
+                         console.log(`Metrics for ${stateName}:`, {
+                            yieldDrop: Math.round((yieldRes.data.predictions_jan || 0) * 100) / 100,
+                            riskScore: Math.round((riskRes.data.risk_score || 0) * 100) / 100,
+                            foodInflation: Math.round((foodInflation.data.predicted_price_change_jan || 0) * 100) / 100,
+                            predictedRainfall: Math.round((predictedRainfall.data.predicted_rainfall || 0)),
+                        });
 
                         return {
                             stateName,
                             yieldDrop: Math.round((yieldRes.data.predictions_jan || 0) * 100) / 100,
                             riskScore: Math.round((riskRes.data.risk_score || 0) * 100) / 100,
                             foodInflation: Math.round((foodInflation.data.predicted_price_change_jan || 0) * 100) / 100,
+                            predictedRainfall: Math.round((predictedRainfall.data.predicted_rainfall || 0) / 100 * 100) / 100,
                         };
+
+                       
                     } catch (err){
                         console.log(`Error fetching metrics for ${stateName}:`, err);
                         return {
@@ -136,6 +148,7 @@ useEffect(() =>{
                             yieldDrop: 15,
                             riskScore: 60,
                             foodInflation: 50,
+                            predictedRainfall: 10,
                         };
                     }
                 })
@@ -148,6 +161,7 @@ useEffect(() =>{
                     yieldDrop: res.yieldDrop,
                     riskScore: res.riskScore,
                     foodInflation: res.foodInflation,
+                    predictedRainfall: res.predictedRainfall,
                 }
             });
 
@@ -321,7 +335,11 @@ useEffect(() =>{
                         <BarChart data={comparisonData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }} barGap={4}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                             <XAxis dataKey="state" tick={{ fill: "#9ca3af", fontSize: 12 }} axisLine={{ stroke: "#e5e7eb" }} />
-                            <YAxis domain={[0,20]} tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={{ stroke: "#e5e7eb" }} />
+                            <YAxis 
+  tick={{ fill: "#9ca3af", fontSize: 11 }} 
+  axisLine={{ stroke: "#e5e7eb" }}
+  label={{ value: 'mm', angle: -90, position: 'insideLeft' }} 
+/>
                             <Tooltip content={<CustomTooltip />} />
                             <Legend wrapperStyle={{ color: "#6b7280", fontSize: 12, paddingTop: 12 }} />
                             <Bar dataKey="Risk Score" fill="#f87171" radius={[4, 4, 0, 0]} />

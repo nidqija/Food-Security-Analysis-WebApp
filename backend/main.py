@@ -12,6 +12,7 @@ import json
 from services.calculate_yield_index import train_and_predict
 from services.calculate_risk_score import calculate_risk
 from services.calculate_market_inflation import calc_market_inflation_trend
+from services.calculate_predicted_rainfall import calculate_predicted_rainfall
 import numpy as np
 
 load_dotenv()
@@ -95,6 +96,17 @@ async def get_state_inflation(state_name: str):
    except Exception as e:
         print(f"Error calculating market inflation trend: {e}")
         return {"error": "Could not calculate market inflation trend"}
+   
+   
+@app.get('/request_state_predicted_rainfall/{state_name}')
+async def get_state_predicted_rainfall(state_name: str):
+    try:
+          predicted_rainfall = calculate_predicted_rainfall(state_name)
+          return {"state": state_name , "predicted_rainfall" : predicted_rainfall, "message": "Predicted rainfall calculated successfully. Check server logs for details."}
+    
+    except Exception as e:
+          print(f"Error calculating predicted rainfall: {e}")
+          return {"error": "Could not calculate predicted rainfall"}
 
     
 @app.get('/request_state_analysis/{state_name}')
