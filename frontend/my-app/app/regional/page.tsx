@@ -15,13 +15,7 @@ const STATES = [
     { name: "Sarawak", neighbors: ["Sabah", "Johor"], region: "East Malaysia" },
 ];
 
-const STATE_ADVICE: Record<string, string[]> = {
-    Johor: ["Increase irrigation in Northern Districts due to 15% below-average rainfall.", "Expand palm oil buffer reserves ahead of Q2 export demand spike.", "Deploy mobile crop disease monitoring teams to Batu Pahat and Pontian."],
-    Kedah: ["Release rice buffer stocks to stabilize prices — supply at 78% capacity.", "Activate Muda Agricultural Development Authority (MADA) irrigation channels.", "Issue early warning advisory to padi farmers in Kota Setar district."],
-    Selangor: ["Monitor urban food supply chains — Klang Valley distribution pressure detected.", "Coordinate with FAMA to fast-track vegetable distribution from Cameron Highlands.", "Increase subsidy allocation for low-income households — food CPI up 8%."],
-    Sabah: ["Strengthen coastal fishing community support — monsoon season risk elevated.", "Prioritize road infrastructure for Tawau–Sandakan food transport corridor.", "Collaborate with Sabah Agriculture Department on drought-resistant crop varieties."],
-    Sarawak: ["Deploy aerial surveillance for flood-affected farmland in Sri Aman.", "Accelerate pepper and sago subsidy distribution to affected longhouse communities.", "Increase budget for Sarawak River irrigation rehabilitation project."],
-};
+
 
 
 
@@ -57,7 +51,6 @@ function RegionalContent() {
     const [predictedRainfall , setPredictedRainfall] = useState<number | null>(null);
     const [stateMetrics , setStateMetrics] = useState<Record<string, any>>({});
 
-    const advice = STATE_ADVICE[selectedState] ?? [];
     const stateInfo = STATES.find((s) => s.name === selectedState);
     const columns = tableData.length > 0 ? Object.keys(tableData[0]).filter((k) => k !== "__typename") : [];
     const columns2 = tableData2.length > 0 ? Object.keys(tableData2[0]).filter((k) => k !== "__typename") : [];
@@ -221,10 +214,7 @@ useEffect(() =>{
                             <p className="text-gray-400 text-xs uppercase tracking-wider">Data Records</p>
                             <p className="text-gray-800 font-medium mt-0.5">{loading ? "Loading…" : `${tableData.length + tableData2.length} rows`}</p>
                         </div>
-                        <div>
-                            <p className="text-gray-400 text-xs uppercase tracking-wider">AI Actions</p>
-                            <p className="text-gray-800 font-medium mt-0.5">{advice.length} recommendations</p>
-                        </div>
+                        
                     </div>
                 </div>
 
@@ -308,19 +298,12 @@ useEffect(() =>{
 
                     {/* AI Advice */}
                     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                        <h2 className="font-semibold text-gray-800 mb-4">🤖 AI-Recommended Actions</h2>
+                        <h2 className="font-semibold text-gray-800 mb-4">Peer Review Food Supply Index Score</h2>
                         <div className="space-y-4">
-                            {advice.map((action, i) => (
-                                <div key={i} className="flex items-start gap-3 p-4 bg-gray-50 border border-gray-100 rounded-xl">
-                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                        {i + 1}
-                                    </div>
-                                    <p className="text-gray-600 text-sm leading-relaxed">{action}</p>
-                                </div>
-                            ))}
+                           
                         </div>
                         <div className="mt-4 p-3 bg-cyan-50 border border-cyan-100 rounded-xl text-xs text-cyan-700">
-                            💡 Recommendations based on historical risk patterns and live sensor data for {selectedState}.
+                            💡 Food Supply Index Score based on news fetching for {selectedState}.
                         </div>
                     </div>
                 </div>
