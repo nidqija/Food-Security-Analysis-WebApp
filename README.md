@@ -73,9 +73,9 @@ After numerical and news data are processed, the system uses a local LLM (Ollama
 | **Frontend** | Next.js, Tailwind CSS, Lucide React |
 | **Backend** | FastAPI (Python), SQLAlchemy, Pandas |
 | **Database** | PostgreSQL |
-| **Machine Learning** | XGBoost, Scikit-learn, Pickle |
-| **Scraping/NLP** | BeautifulSoup4, Newspaper3k |
-| **AI Layer** | Ollama (Local Llama 3 / Mistral) |
+| **Machine Learning** | XGBoost, Scikit-learn |
+| **Scraping/NLP** | BeautifulSoup4 |
+| **AI Layer** | Ollama (Gemma3:1B) |
 
 ---
 
