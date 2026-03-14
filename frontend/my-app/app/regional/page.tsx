@@ -52,6 +52,7 @@ function RegionalContent() {
     const [predictedRainfall , setPredictedRainfall] = useState<number | null>(null);
     const [stateMetrics , setStateMetrics] = useState<Record<string, any>>({});
     const [newsFeed , setNewsFeed] = useState<any[]>([]);
+    const [foodSupplyRating , setFoodSupplyRating] = useState<string>("");
 
     const stateInfo = STATES.find((s) => s.name === selectedState);
     const columns = tableData.length > 0 ? Object.keys(tableData[0]).filter((k) => k !== "__typename") : [];
@@ -175,7 +176,7 @@ useEffect(() => {
         try {
             const response = await axios.get(`http://localhost:8000/food_news/${selectedState}`);
             console.log("Food news insights for", selectedState, "is", response.data.count);
-          //  response.data.news.forEach((item: any) => console.log(item.title));
+            response.data.news.forEach((item: any) => console.log(item.title));
 
 
             // update the news feed state with the news items in an array of objects with title and link properties
@@ -195,6 +196,14 @@ useEffect(() => {
 
 
 useEffect(() => { 
+
+   
+   const metricsReady = stateMetrics[selectedState];
+
+   const newsReady = newsFeed.length > 0;
+
+   if (!metricsReady || !newsReady) return;
+
    const getFoodNews = async() => {
       try {
         const response = await fetch(`http://localhost:11434/api/chat` , {
@@ -234,6 +243,7 @@ useEffect(() => {
         if (response.ok) {
             const data = await response.json();
             console.log("AI Food Supply Insight:", data);
+            setFoodSupplyRating(data.message.content);
         } else {
             console.log("Error fetching AI insights:", response.statusText);
         }
@@ -246,8 +256,24 @@ useEffect(() => {
 
    getFoodNews();
 
-},[]);
+},[stateMetrics, newsFeed , selectedState]);
 
+
+const getScore = (text: string) => {
+    if (!text) return "Processing...";
+
+    
+    const scoreMatch = text.match(/Final\s+Supply\s+Score[^:]*[:\s*]*(\d+)/i);
+    if (scoreMatch) return scoreMatch[1];
+
+   
+    const outOfHundredMatch = text.match(/(\d+)\/100/);
+    if (outOfHundredMatch) return outOfHundredMatch[1];
+
+    
+    const standaloneNum = text.match(/(?<!\d\.\s)\b([1-9]\d|100)\b/);
+    return standaloneNum ? standaloneNum[1] : "N/A";
+};
 
 
  
@@ -380,12 +406,34 @@ useEffect(() => {
                     {/* AI Advice */}
                     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                         <h2 className="font-semibold text-gray-800 mb-4">Peer Review Food Supply Index Score</h2>
-                        <div className="space-y-4">
-                           
-                        </div>
-                        <div className="mt-4 p-3 bg-cyan-50 border border-cyan-100 rounded-xl text-xs text-cyan-700">
+                          <div className="mt-4 p-3 bg-cyan-50 border border-cyan-100 rounded-xl text-xs text-cyan-700">
                             💡 Food Supply Index Score based on news fetching for {selectedState}.
                         </div>
+                        <div className="p-4">
+                            <p>Food Supply Rating: </p>
+                            <div className="p-4 mt-4 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+                            <h5 className="font-bold text-lg">{getScore(foodSupplyRating)}</h5>
+                            </div>
+                        </div>
+                        <div className="space-y-4 p-4">
+                            
+                            <p>Source News:</p>
+                   {newsFeed.length === 0 ? (
+                           <p className="text-gray-400 text-sm">No news insights available.</p>
+                            ) : (
+                         newsFeed.map((item, index) => (
+                          <div key={index} className="p-4 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
+                           {/* Change {item} to {item.title} 
+                              Optionally, wrap it in an <a> tag to make it clickable 
+                             */}
+                         <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                            {item.title}
+                         </a>
+                        </div>
+                     ))
+                  )}
+                    </div>
+                      
                     </div>
                 </div>
 
