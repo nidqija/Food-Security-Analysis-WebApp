@@ -6,6 +6,7 @@ import axios from "axios";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
+import { FoodNewsInsightAnalysis } from "../factory/Fixer";
 
 const STATES = [
     { name: "Johor", neighbors: ["Selangor", "Kedah"], region: "Southern" },
@@ -50,6 +51,7 @@ function RegionalContent() {
     const [foodInflation , setFoodInflation] = useState<number | null>(null);
     const [predictedRainfall , setPredictedRainfall] = useState<number | null>(null);
     const [stateMetrics , setStateMetrics] = useState<Record<string, any>>({});
+    const [newsFeed , setNewsFeed] = useState<any[]>([]);
 
     const stateInfo = STATES.find((s) => s.name === selectedState);
     const columns = tableData.length > 0 ? Object.keys(tableData[0]).filter((k) => k !== "__typename") : [];
@@ -166,6 +168,85 @@ useEffect(() =>{
     };
     fetchAllMetrics();
 } ,[selectedState , stateInfo])
+
+
+useEffect(() => {
+    const fetchFoodNewsInsights = async() => {
+        try {
+            const response = await axios.get(`http://localhost:8000/food_news/${selectedState}`);
+            console.log("Food news insights for", selectedState, "is", response.data.count);
+          //  response.data.news.forEach((item: any) => console.log(item.title));
+
+
+            // update the news feed state with the news items in an array of objects with title and link properties
+            setNewsFeed(response.data.news || []);
+
+        } catch (err) {
+            console.log("Error fetching food news insights:", err);
+        }
+        
+
+    }
+
+
+    fetchFoodNewsInsights();
+},[selectedState])
+
+
+
+useEffect(() => { 
+   const getFoodNews = async() => {
+      try {
+        const response = await fetch(`http://localhost:11434/api/chat` , {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+                model : "gemma3:1b",
+                stream :false,
+                messages : [ {
+                    role: FoodNewsInsightAnalysis.role,
+                    content: FoodNewsInsightAnalysis.content,
+                } ,
+            {
+                        role: "user",
+                        content: `Analyze the food supply for ${selectedState}. 
+                        METRICS:
+                        - Predicted Yield Drop: ${stateMetrics[selectedState]?.yieldDrop}%
+                        - Climate Risk Score: ${stateMetrics[selectedState]?.riskScore}/100
+                        - Food Inflation: ${stateMetrics[selectedState]?.foodInflation}%
+                        
+                        RECENT HEADLINES:
+                        ${newsFeed.map((item) => `- ${item.title}`).join("\n")}
+
+                        Provide:
+                        1. A Final Supply Score (0-100).
+                        2. A 2-sentence justification.
+                        3. One priority mitigation strategy.`
+                    }] ,
+
+                    
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log("AI Food Supply Insight:", data);
+        } else {
+            console.log("Error fetching AI insights:", response.statusText);
+        }
+      }
+
+      catch(err){
+        console.log("Error fetching food news insights:", err);
+      }
+   }
+
+   getFoodNews();
+
+},[]);
 
 
 

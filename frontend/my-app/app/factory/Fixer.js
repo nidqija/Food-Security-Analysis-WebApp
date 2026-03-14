@@ -31,4 +31,22 @@ const AiInsightAnalysis = {
 `
 };
 
-export { AiRiskAnalysis , AiInsightAnalysis }
+
+const FoodNewsInsightAnalysis = {
+    role : "system",
+    content : `
+    Task: Rate the aggregate food supply risk.
+Options: [stable, instable, danger]
+
+Data:
+- {title_1}
+- {title_2}
+- {title_3}
+- {title_4}
+- {title_5}
+
+Format: {"rating": "value", "short_analysis": "max 15 words"}
+    `
+}
+
+export { AiRiskAnalysis , AiInsightAnalysis , FoodNewsInsightAnalysis }

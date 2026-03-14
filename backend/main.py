@@ -13,6 +13,7 @@ from services.calculate_yield_index import train_and_predict
 from services.calculate_risk_score import calculate_risk
 from services.calculate_market_inflation import calc_market_inflation_trend
 from services.calculate_predicted_rainfall import calculate_predicted_rainfall
+from services.scraping_food_news import scrape_food_news
 import numpy as np
 
 load_dotenv()
@@ -125,3 +126,16 @@ async def load_raw_records(state_name: str):
         records = [row._asdict() for row in result]
         records2 = [row._asdict() for row in result2]
     return {"state": state_name , "records": records , "training_data": records2}
+
+
+@app.get('/food_news/{state_name}')
+async def get_food_news(state_name: str):
+    news_results = scrape_food_news()
+    return {
+        "state" : state_name,
+        "news" : news_results,
+        "count" : len(news_results)
+    }
+    
+
+    
