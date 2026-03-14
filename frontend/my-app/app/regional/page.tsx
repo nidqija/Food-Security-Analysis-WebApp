@@ -409,12 +409,37 @@ const getScore = (text: string) => {
                           <div className="mt-4 p-3 bg-cyan-50 border border-cyan-100 rounded-xl text-xs text-cyan-700">
                             💡 Food Supply Index Score based on news fetching for {selectedState}.
                         </div>
-                        <div className="p-4">
-                            <p>Food Supply Rating: </p>
-                            <div className="p-4 mt-4 bg-green-50 border border-green-100 rounded-xl text-sm text-green-700">
-                            <h5 className="font-bold text-lg">{getScore(foodSupplyRating)}</h5>
-                            </div>
-                        </div>
+                      <div className="p-4">
+                         {foodSupplyRating ? (
+                            (() => {
+                                const score = getScore(foodSupplyRating);
+
+                                if (score === "N/A") {
+                                    return <p className="text-gray-400 text-sm">Could not extract score from AI response.</p>;
+                                }
+
+                                const numScore = Number(score);
+                                
+
+                                return (
+                                    <div className={`mt-2 p-4 border rounded-xl ${
+                                     numScore <= 40
+                                    ? "bg-red-50 border-red-200 text-red-700" 
+                                    : numScore <= 70 
+                                    ? "bg-yellow-50 border-yellow-200 text-yellow-700" 
+                                    : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                }`}>
+                                    <h2 className="font-bold">
+                                      Final Food Supply Score: {score}/100
+                                    </h2>
+                                    </div>
+                                );
+
+                            }) ()
+                         ) : (
+                            <p className="text-gray-400 text-sm">Generating AI insights based on current metrics and news...</p>
+                         )}
+                      </div>
                         <div className="space-y-4 p-4">
                             
                             <p>Source News:</p>
