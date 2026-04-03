@@ -29,4 +29,4 @@ EXPOSE 8080
 
 # Command to run the application using Uvicorn
 # Note: Google Cloud Run/GCR expects the app to listen on 0.0.0.0
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
