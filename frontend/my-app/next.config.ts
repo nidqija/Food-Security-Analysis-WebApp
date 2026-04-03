@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    turbo: undefined,
-  },
   transpilePackages: ["leaflet", "react-leaflet", "leaflet-defaulticon-compatibility"],
   webpack: (config, { isServer }) => {
     if (isServer) {
