@@ -1,32 +1,25 @@
-# Use an official lightweight Python image
 FROM python:3.11-slim
 
-# Set the working directory inside the container
+# Prevents .pyc files and enables real-time logs
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Set environment variables
-# Prevents Python from writing pyc files to disc
-ENV PYTHONDONTWRITEBYTECODE 1
-# Prevents Python from buffering stdout and stderr
-ENV PYTHONUNBUFFERED 1
-
-# Install system dependencies (needed for some Python packages)
+# System deps needed for psycopg2, xgboost, and numpy builds
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only requirements first to leverage Docker cache
+# Install Python dependencies first (layer cache)
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of your backend code
+# Copy application code
 COPY . .
 
-# Expose the port FastAPI will run on
 EXPOSE 8080
 
-# Command to run the application using Uvicorn
-# Note: Google Cloud Run/GCR expects the app to listen on 0.0.0.0
+# PORT env var is injected by Cloud Run; falls back to 8080 locally
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
