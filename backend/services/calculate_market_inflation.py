@@ -1,15 +1,7 @@
 import xgboost as xgb
-from sqlalchemy import create_engine
-from dotenv import load_dotenv
-
 import os
 import pandas as pd
-import urllib
-
-
-load_dotenv()
-safe_password = urllib.parse.quote_plus(os.getenv('password'))
-engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}") 
+from services.db import engine
 
 
 def calc_market_inflation_trend(state_name: str):

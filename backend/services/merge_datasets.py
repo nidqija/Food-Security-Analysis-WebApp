@@ -1,12 +1,9 @@
 import pandas as pd
-import os 
-from sqlalchemy import create_engine
+import os
 from dotenv import load_dotenv
-import urllib
+from services.db import engine
 
 load_dotenv()
-safe_password = urllib.parse.quote_plus(os.getenv('password'))
-engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))

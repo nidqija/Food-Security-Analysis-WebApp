@@ -1,18 +1,11 @@
 import pandas as pd
-from sqlalchemy import create_engine
-import urllib
 import xgboost as xgb
 import joblib
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
 import os
 from dotenv import load_dotenv
-
-
+from services.db import engine
 
 load_dotenv()
-safe_password = urllib.parse.quote_plus(os.getenv('password'))
-engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
 
 
 def train_for_predicted_temp():

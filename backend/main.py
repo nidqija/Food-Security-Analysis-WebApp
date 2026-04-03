@@ -38,7 +38,13 @@ async def lifespan(app: FastAPI):
         user = os.getenv('user_name')
         password = os.getenv('password')
         host = os.getenv('host')
-        if all([user, password, host]):
+        database_url = os.getenv('DATABASE_URL')
+
+        if database_url:
+            # use full connection string if provided (Render/Neon/Supabase)
+            engine = create_engine(database_url)
+        elif all([user, password, host]):
+            # fallback to individual vars for local dev
             safe_password = urllib.parse.quote_plus(password)
             engine = create_engine(f"postgresql://{user}:{safe_password}@{host}:{os.getenv('port')}/{os.getenv('database')}")
         print("Startup complete: Models and DB loaded.")

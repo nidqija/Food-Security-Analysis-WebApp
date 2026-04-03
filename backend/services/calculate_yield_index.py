@@ -1,16 +1,10 @@
-from xml.parsers.expat import model
 import xgboost as xgb
-from sqlalchemy import create_engine
 from dotenv import load_dotenv
 import os
 import pandas as pd
-import urllib
-
+from services.db import engine
 
 load_dotenv()
-
-safe_password = urllib.parse.quote_plus(os.getenv('password'))
-engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
 
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "xgb_model.json")
 
