@@ -66,7 +66,7 @@ export default function Home() {
   const AI_INSIGHTS_EXPERT = AiInsightAnalysis;
 
 
-  const API_URL = "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
   const AI_URL = getGroqEndpoint();
   const isAiConfigured = AI_URL.length > 0;
 

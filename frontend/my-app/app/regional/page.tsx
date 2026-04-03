@@ -63,7 +63,7 @@
         const [newsFeed , setNewsFeed] = useState<any[]>([]);
         const [foodSupplyRating , setFoodSupplyRating] = useState<string>("");
         const [aiUnavailable, setAiUnavailable] = useState(false);
-        const API_URL = "http://localhost:8000";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
         const AI_URL = getGroqEndpoint();
 
         const stateInfo = STATES.find((s) => s.name === selectedState);
@@ -371,7 +371,7 @@
                             ) : error ? (
                                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
                                     ⚠️ {error}
-                                    <p className="text-xs mt-1 text-red-500">Make sure the backend is running at localhost:8000</p>
+                                    <p className="text-xs mt-1 text-red-500">Make sure the backend is reachable at {process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}</p>
                                 </div>
                             ) : tableData.length === 0 ? (
                                 <p className="text-gray-400 text-sm">No data returned from API.</p>
