@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from dotenv import load_dotenv
-from services.db import engine
+from .db import engine
 
 load_dotenv()
 

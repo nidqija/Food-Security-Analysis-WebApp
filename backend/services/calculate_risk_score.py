@@ -1,7 +1,7 @@
 import xgboost as xgb
 import os
 import pandas as pd
-from services.db import engine
+from .db import engine
 
 
 def calculate_risk(state_name: str):

@@ -3,7 +3,7 @@ import xgboost as xgb
 import joblib
 import os
 from dotenv import load_dotenv
-from services.db import engine
+from .db import engine
 
 load_dotenv()
 

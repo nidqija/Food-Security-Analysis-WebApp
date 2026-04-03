@@ -2,7 +2,7 @@ import xgboost as xgb
 from dotenv import load_dotenv
 import os
 import pandas as pd
-from services.db import engine
+from .db import engine
 
 load_dotenv()
 
