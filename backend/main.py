@@ -144,14 +144,31 @@ async def get_state_analysis(state_name: str):
   
 
 
-@app.get('/load_raw_records/{state_name}')
+@app.get('/state/{state_name}')
+async def get_state(state_name: str):
+    if engine is None:
+        return {"state": state_name, "data": []}
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text(f"SELECT * FROM food_supply WHERE state = '{state_name}'"))
+            data = [row._asdict() for row in result]
+        return {"state": state_name, "data": data}
+    except Exception as e:
+        print(f"Error fetching state data: {e}")
+        return {"state": state_name, "data": []}
 async def load_raw_records(state_name: str):
-    with engine.connect() as connection:
-        result = connection.execute(text(f"SELECT * FROM food_supply WHERE state = '{state_name}'"))
-        result2 = connection.execute(text(f"SELECT * FROM training_data WHERE state = '{state_name}'"))
-        records = [row._asdict() for row in result]
-        records2 = [row._asdict() for row in result2]
-    return {"state": state_name , "records": records , "training_data": records2}
+    if engine is None:
+        return {"state": state_name, "records": [], "training_data": [], "error": "Database not configured"}
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text(f"SELECT * FROM food_supply WHERE state = '{state_name}'"))
+            result2 = connection.execute(text(f"SELECT * FROM training_data WHERE state = '{state_name}'"))
+            records = [row._asdict() for row in result]
+            records2 = [row._asdict() for row in result2]
+        return {"state": state_name, "records": records, "training_data": records2}
+    except Exception as e:
+        print(f"Error loading raw records: {e}")
+        return {"state": state_name, "records": [], "training_data": [], "error": str(e)}
 
 
 @app.get('/food_news/{state_name}')

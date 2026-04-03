@@ -2,29 +2,27 @@ import pandas as pd
 import psycopg2
 import dotenv
 import os
+from urllib.parse import urlparse
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(BASE_DIR, "datasets", "food_supply_datasets.csv")
 
-print("File path: ", file_path)
-
 dotenv.load_dotenv()
 
 def get_db_connection():
-    conn = psycopg2.connect(
-        database=os.getenv("database"),
-        user=os.getenv("user_name"),
-        password=os.getenv("password"),
-        host=os.getenv("host"),
-        port=os.getenv("port")
-    )
-
-    if conn:
-        print("Database connection successful")
-    
-    else :
-        print("Database connection failed" , conn)
-
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        r = urlparse(database_url)
+        conn = psycopg2.connect(
+            database=r.path[1:], user=r.username,
+            password=r.password, host=r.hostname, port=r.port
+        )
+    else:
+        conn = psycopg2.connect(
+            database=os.getenv("database"), user=os.getenv("user_name"),
+            password=os.getenv("password"), host=os.getenv("host"), port=os.getenv("port")
+        )
+    print("Database connection successful")
     return conn
 
 
@@ -75,6 +73,29 @@ def create_table_for_predict_temp(conn):
 get_db_connection()
 create_table(get_db_connection())
 create_table_for_predict_temp(get_db_connection())
+
+# Insert food_supply CSV data
+def insert_food_supply():
+    from sqlalchemy import create_engine
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        engine = create_engine(database_url)
+    else:
+        from urllib.parse import quote_plus
+        safe_pw = quote_plus(os.getenv("password", ""))
+        engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_pw}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
+    df = pd.read_csv(file_path)
+    df.to_sql("food_supply", engine, if_exists="replace", index=False)
+    print(f"✅ Inserted {len(df)} rows into food_supply")
+
+# Insert training_data via merge_datasets
+def insert_training_data():
+    from services.merge_datasets import merge_and_insert
+    merge_and_insert()
+
+if __name__ == "__main__":
+    insert_food_supply()
+    insert_training_data()
 
 
 
