@@ -12,6 +12,8 @@ load_dotenv()
 safe_password = urllib.parse.quote_plus(os.getenv('password'))
 engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
 
+MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "xgb_model.json")
+
 # this function is used to train model and predict yields for next 2 months based on data of specific state 
 def train_and_predict(state_name: str):
     query = f"SELECT * FROM food_supply WHERE state = '{state_name}'"
@@ -58,19 +60,11 @@ def train_and_predict(state_name: str):
     
     return predictions, model, feature_summary 
 
-# Corrected function call (Unpacking 3 values)
-preds, my_trained_model, features = train_and_predict("Johor")
-print(f"Predicted yields for {my_trained_model}: {preds}")
-
-my_trained_model.save_model("xgb_model.json")
-
-# function call to train model
-preds, my_trained_model, features = train_and_predict("Johor")
-print(f"Predicted yields for Jan and Feb for Johor: {preds}")
-
-# save the trained model to json file for later use in the API
-my_trained_model.save_model("xgb_model.json")
-print("Model saved as xgb_model.json")
+if __name__ == "__main__":
+    preds, my_trained_model, features = train_and_predict("Johor")
+    print(f"Predicted yields for Jan and Feb for Johor: {preds}")
+    my_trained_model.save_model(MODEL_PATH)
+    print(f"Model saved to {MODEL_PATH}")
 
 
 

@@ -29,13 +29,14 @@ def train_for_predicted_temp():
    X_encoded = pd.get_dummies(X, columns=['state']) 
 
    # save the feature names used for training the model to ensure consistency during prediction
-   joblib.dump(X_encoded.columns, 'temp_model_features.pkl')
+   DATASETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "datasets")
+   joblib.dump(X_encoded.columns, os.path.join(DATASETS_DIR, "temp_model_features.pkl"))
 
    # train the model using xgboost
    model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
    model.fit(X_encoded, Y)
 
-   joblib.dump(model, 'temp_prediction_model.pkl')
+   joblib.dump(model, os.path.join(DATASETS_DIR, "temp_prediction_model.pkl"))
    print("Model trained and saved successfully for predicted temperature.")
 
 

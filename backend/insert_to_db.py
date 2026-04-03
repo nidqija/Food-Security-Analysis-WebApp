@@ -3,7 +3,8 @@ import psycopg2
 import dotenv
 import os
 
-file_path = "../datasets/food_supply_datasets.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+file_path = os.path.join(BASE_DIR, "datasets", "food_supply_datasets.csv")
 
 print("File path: ", file_path)
 

@@ -1,19 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
-import "leaflet-defaulticon-compatibility";
-import {AiRiskAnalysis , AiInsightAnalysis } from "./factory/Fixer";
+import dynamic from "next/dynamic";
+import { AiRiskAnalysis , AiInsightAnalysis } from "./factory/Fixer";
 import axios from "axios";
 import Link from "next/link";
 
-const getGoogleAiEndpoint = (model = "gemini-2.0-flash") => {
-  const apiKey = process.env.NEXT_PUBLIC_AI_PUBLIC_KEY?.trim();
-  if (!apiKey) return "";
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-};
+const Map = dynamic(() => import("./components/Map"), { ssr: false });
 
 const getGroqEndpoint = () => {
   const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY?.trim();
@@ -33,12 +26,6 @@ const buildGroqBody = (systemPrompt: string, userMessage: string) => JSON.string
 
 const extractGroqText = (data: any): string =>
   data?.choices?.[0]?.message?.content?.trim() ?? "";
-
-function RecenterMap({ position }: { position: [number, number] }) {
-  const map = useMap();
-  useEffect(() => { map.setView(position, 10); }, [position, map]);
-  return null;
-}
 
 const STATES = [
   { name: "Johor", coords: [1.4927, 103.7414] as [number, number] },
@@ -387,16 +374,7 @@ const getProductionSection = (title : string) => {
               </select>
             </div>
             <div className="h-72 rounded-xl overflow-hidden border border-gray-100">
-              <MapContainer center={positionState} zoom={10} scrollWheelZoom={false} className="h-full w-full">
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker position={positionState}>
-                  <Popup><strong>{selectedState}</strong><br />Yield Score: {yieldData}%</Popup>
-                </Marker>
-                <RecenterMap position={positionState} />
-              </MapContainer>
+              <Map position={positionState} selectedState={selectedState} yieldData={yieldData} />
             </div>
             <div className="mt-3 flex items-center gap-2">
               <Link

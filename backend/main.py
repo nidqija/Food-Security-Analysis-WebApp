@@ -1,6 +1,5 @@
 import json
 import os
-from xml.parsers.expat import model
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -8,7 +7,6 @@ from sqlalchemy import create_engine , text
 import pandas as pd
 import urllib
 import xgboost as xgb
-import json
 from services.calculate_yield_index import train_and_predict
 from services.calculate_risk_score import calculate_risk
 from services.calculate_market_inflation import calc_market_inflation_trend
@@ -18,16 +16,19 @@ import numpy as np
 
 load_dotenv()
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATASETS_DIR = os.path.join(BASE_DIR, "datasets")
 
 # ========================================================================================================================================
 app = FastAPI()
 safe_password = urllib.parse.quote_plus(os.getenv('password'))
 engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
-model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
-model.load_model("xgb_model.json")
-csv_path = "../datasets/crops_state.csv"
-pkl_model_path = "../datasets/temp_prediction_model.pkl"
-pkl_feature_path = "../datasets/temp_model_features.pkl"
+xgb_model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
+xgb_model.load_model(os.path.join(BASE_DIR, "xgb_model.json"))
+
+csv_path = os.path.join(DATASETS_DIR, "crops_state.csv")
+pkl_model_path = os.path.join(DATASETS_DIR, "temp_prediction_model.pkl")
+pkl_feature_path = os.path.join(DATASETS_DIR, "temp_model_features.pkl")
 
 # Allow CORS for all origins (for development purposes)
 app.add_middleware(

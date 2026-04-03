@@ -67,8 +67,4 @@ def calculate_predicted_rainfall(state_name: str):
 
     print(f"Predicted Rainfall for {state_name}: {avg_predicted_rainfall:.2f} mm")
 
-
     return float(avg_predicted_rainfall or 0)
-
-
-calculate_predicted_rainfall("Johor")
