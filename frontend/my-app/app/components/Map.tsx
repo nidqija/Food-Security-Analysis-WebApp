@@ -1,9 +1,7 @@
 "use client";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "leaflet/dist/leaflet.css";
-import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
-import "leaflet-defaulticon-compatibility";
 
 function RecenterMap({ position }: { position: [number, number] }) {
   const map = useMap();
@@ -12,6 +10,18 @@ function RecenterMap({ position }: { position: [number, number] }) {
 }
 
 export default function Map({ position, selectedState, yieldData }: any) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // leaflet-defaulticon-compatibility accesses `window` at import time,
+    // so it must be loaded client-side only
+    require("leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css");
+    require("leaflet-defaulticon-compatibility");
+    setReady(true);
+  }, []);
+
+  if (!ready) return null;
+
   return (
     <MapContainer center={position} zoom={10} scrollWheelZoom={false} className="h-full w-full">
       <TileLayer
