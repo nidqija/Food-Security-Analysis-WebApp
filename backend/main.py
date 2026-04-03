@@ -1,9 +1,10 @@
 import json
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from sqlalchemy import create_engine , text
+from sqlalchemy import create_engine, text
 import pandas as pd
 import urllib
 import xgboost as xgb
@@ -18,22 +19,40 @@ load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATASETS_DIR = os.path.join(BASE_DIR, "datasets")
-
-# ========================================================================================================================================
-app = FastAPI()
-safe_password = urllib.parse.quote_plus(os.getenv('password'))
-engine = create_engine(f"postgresql://{os.getenv('user_name')}:{safe_password}@{os.getenv('host')}:{os.getenv('port')}/{os.getenv('database')}")
-xgb_model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
-xgb_model.load_model(os.path.join(BASE_DIR, "xgb_model.json"))
-
 csv_path = os.path.join(DATASETS_DIR, "crops_state.csv")
 pkl_model_path = os.path.join(DATASETS_DIR, "temp_prediction_model.pkl")
 pkl_feature_path = os.path.join(DATASETS_DIR, "temp_model_features.pkl")
 
-# Allow CORS for all origins (for development purposes)
+engine = None
+xgb_model = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global engine, xgb_model
+    try:
+        xgb_model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1)
+        model_path = os.path.join(BASE_DIR, "xgb_model.json")
+        if os.path.exists(model_path):
+            xgb_model.load_model(model_path)
+
+        user = os.getenv('user_name')
+        password = os.getenv('password')
+        host = os.getenv('host')
+        if all([user, password, host]):
+            safe_password = urllib.parse.quote_plus(password)
+            engine = create_engine(f"postgresql://{user}:{safe_password}@{host}:{os.getenv('port')}/{os.getenv('database')}")
+        print("Startup complete: Models and DB loaded.")
+    except Exception as e:
+        print(f"Startup error: {e}")
+    yield
+    if engine:
+        engine.dispose()
+
+# ========================================================================================================================================
+app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=["http://localhost:3000"],  # Allow only the frontend origin in production
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
